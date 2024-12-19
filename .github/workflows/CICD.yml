@@ -47,7 +47,7 @@ jobs:
             npm run build
             # Vérifier si le répertoire de destination existe
             if [ "$(ls -A ./www)" ]; then
-              rsync -r --delete ./$last_directory/out ./www
+              rsync -r --delete ./$last_directory/ ./www
               rm -rf ./$last_directory
             else
               echo "Le répertoire flask de destination sur votre serveur n'existe pas"
