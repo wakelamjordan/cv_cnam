@@ -1,21 +1,6 @@
 name: Industrialisation continue sur le serveur Alwaysdata
 on: push
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Clone repo
-        uses: actions/checkout@v3
-
-      - name: Installer Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-        
-      - name: Installer les dépendances
-        run: |
-          npm install
-          
   Connexion:
     runs-on: ubuntu-latest
     steps:
@@ -31,7 +16,31 @@ jobs:
       # - name: Run build
       #   run: |
       #     npm run build
+  deploy:
+    needs: Connexion
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v3
 
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Installer les dépendances
+        run: |
+          npm install
+
+      - name: run build
+        run: |
+          npm run build
+
+           # Étape 5 : Archiver le contenu du répertoire `out`
+      - name: Archiver le dossier `out`
+        run: |
+          tar -czf out.tar.gz out
+        continue-on-error: false
 
   # Copy:
   #   needs: Connexion
@@ -56,8 +65,6 @@ jobs:
   #             echo "Le répertoire flask de destination sur votre serveur n'existe pas"
   #             exit 1
   #           fi
-    
-
 
   # # Update-htpasswd:
   # #   needs: Copy
