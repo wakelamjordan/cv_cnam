@@ -1,6 +1,21 @@
 name: Industrialisation continue sur le serveur Alwaysdata
 on: push
 jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v3
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+        
+      - name: Installer les dépendances
+        run: |
+          npm install
+          
   Connexion:
     runs-on: ubuntu-latest
     steps:
@@ -13,59 +28,47 @@ jobs:
           script: |
             cd $HOME/www/
 
-      - name: Clone repo
-        uses: actions/checkout@v3
-
-      - name: Installer Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-        
-      - name: Installer les dépendances
-        run: |
-          npm install
-
       # - name: Run build
       #   run: |
       #     npm run build
 
 
-  Copy:
-    needs: Connexion
-    runs-on: ubuntu-latest
-    steps:
-      - name: Connexion SSH avec le serveur
-        uses: appleboy/ssh-action@master
-        with:
-          host: "ssh-${{ secrets.USERNAME }}.alwaysdata.net"
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          script: |
-            last_directory=$(basename ${{ runner.workspace }})
-            cd $HOME/
-            git clone https://github.com/${{ github.repository }}.git
-            npm run build
-            # Vérifier si le répertoire de destination existe
-            if [ "$(ls -A ./www)" ]; then
-              rsync -r --delete ./$last_directory/ ./www
-              rm -rf ./$last_directory
-            else
-              echo "Le répertoire flask de destination sur votre serveur n'existe pas"
-              exit 1
-            fi
-    
-
-
-  # Update-htpasswd:
-  #   needs: Copy
+  # Copy:
+  #   needs: Connexion
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - name: Connexion SSH et mise à jour htpasswd
+  #     - name: Connexion SSH avec le serveur
   #       uses: appleboy/ssh-action@master
   #       with:
   #         host: "ssh-${{ secrets.USERNAME }}.alwaysdata.net"
   #         username: ${{ secrets.USERNAME }}
   #         password: ${{ secrets.PASSWORD }}
   #         script: |
-  #           cd $HOME/www/atelier1
-  #           echo '${{ secrets.MY_SECRET_FILE_CONTENT }}' > .htpasswd
+  #           last_directory=$(basename ${{ runner.workspace }})
+  #           cd $HOME/
+  #           git clone https://github.com/${{ github.repository }}.git
+  #           npm run build
+  #           # Vérifier si le répertoire de destination existe
+  #           if [ "$(ls -A ./www)" ]; then
+  #             rsync -r --delete ./$last_directory/ ./www
+  #             rm -rf ./$last_directory
+  #           else
+  #             echo "Le répertoire flask de destination sur votre serveur n'existe pas"
+  #             exit 1
+  #           fi
+    
+
+
+  # # Update-htpasswd:
+  # #   needs: Copy
+  # #   runs-on: ubuntu-latest
+  # #   steps:
+  # #     - name: Connexion SSH et mise à jour htpasswd
+  # #       uses: appleboy/ssh-action@master
+  # #       with:
+  # #         host: "ssh-${{ secrets.USERNAME }}.alwaysdata.net"
+  # #         username: ${{ secrets.USERNAME }}
+  # #         password: ${{ secrets.PASSWORD }}
+  # #         script: |
+  # #           cd $HOME/www/atelier1
+  # #           echo '${{ secrets.MY_SECRET_FILE_CONTENT }}' > .htpasswd
