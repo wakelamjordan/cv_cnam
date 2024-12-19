@@ -25,9 +25,9 @@ jobs:
         run: |
           npm install
 
-      - name: Run build
-        run: |
-          npm run build
+      # - name: Run build
+      #   run: |
+      #     npm run build
 
 
   Copy:
@@ -44,6 +44,7 @@ jobs:
             last_directory=$(basename ${{ runner.workspace }})
             cd $HOME/
             git clone https://github.com/${{ github.repository }}.git
+            npm run build
             # Vérifier si le répertoire de destination existe
             if [ "$(ls -A ./www)" ]; then
               rsync -r --delete ./$last_directory/out ./www
