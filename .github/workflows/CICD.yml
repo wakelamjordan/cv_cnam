@@ -1,8 +1,8 @@
 name: Industrialisation continue sur le serveur Alwaysdata
-
-on:
+on: 
   push:
-
+    branches:
+      - main
 jobs:
   Connexion:
     runs-on: ubuntu-latest
@@ -15,50 +15,11 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           script: |
             cd $HOME/www/
-            echo "Connexion réussie au serveur."
-
-  # build:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Clone repo
-  #       uses: actions/checkout@v3
-
-  #     - name: Installer Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 20
-
-  #     - name: Installer les dépendances
-  #       run: |
-  #         npm install
-
-  #     - name: Exécuter le build de l'application
-  #       run: |
-  #         npm run build
-
-  #     - name: Archiver le dossier `out`
-  #       run: |
-  #         tar -czf out.tar.gz out
-
-  #     - name: Vérifier le contenu de l'archive
-  #       run: |
-  #         tar -tzf out.tar.gz
-
-  #     - name: Télécharger l'archive pour transfert
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: out-archive
-  #         path: out.tar.gz
 
   Copy:
-    # needs: build
+    needs: Connexion
     runs-on: ubuntu-latest
     steps:
-      # - name: Télécharger l'archive créée
-      #   uses: actions/download-artifact@v3
-      #   with:
-      #     name: out-archive
-
       - name: Connexion SSH avec le serveur
         uses: appleboy/ssh-action@master
         with:
@@ -69,27 +30,122 @@ jobs:
             last_directory=$(basename ${{ runner.workspace }})
             cd $HOME/
 
-            if [ "$(ls -A ./www)" ]; then
-              rsync -r --delete ./$last_directory/out ./www
-              rm -rf ./$last_directory
+            # Cloner le repo Git si ce n'est pas déjà fait
+            if [ ! -d "${{ github.repository }}" ]; then
+              git clone https://github.com/${{ github.repository }}.git
+            fi
+
+            # Vérifier si le répertoire www existe et le nettoyer
+            if [ -d "./www" ]; then
+              # Supprimer tous les fichiers et répertoires sauf 'out/'
+              find ./www ! -name 'out' -type f -exec rm -f {} +
+              find ./www ! -name 'out' -type d -exec rm -rf {} +
+
+              echo "Contenu de www/ nettoyé, préparation du transfert..."
+
+              # Utiliser rsync pour transférer uniquement le contenu du dossier 'out'
+              rsync -av --delete $HOME/${last_directory}/out/ ./www/
+
+              echo "Déploiement terminé."
+
             else
-              echo "Le répertoire flask de destination sur votre serveur n'existe pas"
+              echo "Le répertoire www/ n'existe pas sur le serveur."
               exit 1
             fi
 
 
-            # echo "Suppression de l'ancien contenu."
-            # rm -rf ./*
-            
-            # echo "Copie du nouvel archive."
-            # mkdir -p temp
-            # mv ../out.tar.gz temp/
-            # cd temp
-            
-            # echo "Extraction des fichiers."
-            # tar -xzf out.tar.gz -C ../www/
-            
-            # echo "Nettoyage des fichiers temporaires."
-            # cd ..
-            # rm -rf temp
-            # echo "Déploiement terminé."
+  # Update-htpasswd:
+  #   needs: Copy
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Connexion SSH et mise à jour htpasswd
+  #       uses: appleboy/ssh-action@master
+  #       with:
+  #         host: "ssh-${{ secrets.USERNAME }}.alwaysdata.net"
+  #         username: ${{ secrets.USERNAME }}
+  #         password: ${{ secrets.PASSWORD }}
+  #         script: |
+  #           cd $HOME/www/atelier1
+  #           echo '${{ secrets.MY_SECRET_FILE_CONTENT }}' > .htpasswd
+
+
+
+
+# name: Industrialisation continue sur le serveur Alwaysdata
+# on: push
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Clone repo
+#         uses: actions/checkout@v3
+
+#       - name: Installer Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+
+#       - name: Installer les dépendances
+#         run: |
+#           npm install
+
+#       - name: Exécuter le build de l'application
+#         run: |
+#           npm run build
+
+#       # - name: Archiver le dossier `out`
+#       #   run: |
+#       #     # Aucune compression ici, on utilise les fichiers directement
+#       #     tar -czf out.tar.gz out
+
+#       - name: Télécharger l'archive pour transfert
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: out-files
+#           path: out/
+#   deploy:
+#     needs: build
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Télécharger les fichiers générés
+#         uses: actions/download-artifact@v3
+#         with:
+#           name: out-files
+
+#       # - name: Vérifier les fichiers téléchargés
+#       #   run: |
+#       #     ls -la out/
+
+#       - name: Transférer les fichiers vers le serveur via SSH
+#         uses: appleboy/ssh-action@master
+#         with:
+#           host: "ssh-${{ secrets.USERNAME }}.alwaysdata.net"
+#           username: ${{ secrets.USERNAME }}
+#           password: ${{ secrets.PASSWORD }}
+#           script: |
+#             # Créer un répertoire temporaire pour recevoir les fichiers
+#             mkdir -p ~/deploy-temp/
+
+#             # Supprimer tout contenu précédent dans deploy-temp
+#             rm -rf ~/deploy-temp/*
+
+#             # Copier les fichiers dans deploy-temp
+#             echo "Transfert des fichiers du dossier 'out' vers le serveur"
+#             cp -r ./out/* ~/deploy-temp/
+
+#             # Vérifier les fichiers transférés
+#             ls -la ~/deploy-temp/
+
+#             # Nettoyer le dossier 'www' avant le déploiement
+#             echo "Suppression des anciens fichiers dans www"
+#             rm -rf ~/www/*
+
+#             # Copier les fichiers transférés dans le dossier 'www'
+#             echo "Déploiement des nouveaux fichiers dans www"
+#             cp -r ~/deploy-temp/* ~/www/
+
+#             # Nettoyer le répertoire temporaire après déploiement
+#             rm -rf ~/deploy-temp/
+
+#             echo "Déploiement terminé."
+
