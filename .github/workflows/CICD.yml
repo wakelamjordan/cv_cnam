@@ -47,6 +47,8 @@ jobs:
               # Utiliser rsync pour transférer uniquement le contenu du dossier 'out'
               rsync -av --delete $HOME/${last_directory}/out/ ./www/
 
+              rm -rf ./cv_cnam
+
               echo "Déploiement terminé."
 
             else
